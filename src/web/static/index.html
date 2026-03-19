@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgentScope 🔍</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --bg2: #1a1d27;
+      --bg3: #252836;
+      --border: #2e3347;
+      --text: #e2e8f0;
+      --text2: #94a3b8;
+      --accent: #6366f1;
+      --accent2: #818cf8;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --red: #ef4444;
+      --blue: #3b82f6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ===== Header ===== */
+    header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--accent2);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text2);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--red);
+    }
+
+    .status-dot.connected { background: var(--green); }
+
+    /* ===== Layout ===== */
+    .layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ===== Sidebar ===== */
+    .sidebar {
+      width: 280px;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .session-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .session-item {
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 4px;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .session-item:hover { background: var(--bg3); }
+    .session-item.active { background: var(--bg3); border-color: var(--accent); }
+
+    .session-name {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .session-meta {
+      font-size: 11px;
+      color: var(--text2);
+      display: flex;
+      gap: 8px;
+    }
+
+    .badge {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .badge-running { background: rgba(59,130,246,0.2); color: var(--blue); }
+    .badge-completed { background: rgba(34,197,94,0.2); color: var(--green); }
+    .badge-failed { background: rgba(239,68,68,0.2); color: var(--red); }
+
+    /* ===== Main ===== */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      background: var(--bg2);
+      flex-shrink: 0;
+    }
+
+    .tab {
+      padding: 14px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text2);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--accent2); border-bottom-color: var(--accent2); }
+
+    .tab-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    /* ===== Empty State ===== */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text2);
+      gap: 12px;
+    }
+
+    .empty-state .icon { font-size: 48px; }
+    .empty-state h3 { font-size: 18px; color: var(--text); }
+    .empty-state p { font-size: 14px; text-align: center; max-width: 300px; }
+
+    /* ===== Stats Cards ===== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text2);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .stat-sub {
+      font-size: 12px;
+      color: var(--text2);
+      margin-top: 4px;
+    }
+
+    /* ===== Decision Tree ===== */
+    .tree-container {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .tree-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .tree-node {
+      padding: 8px 12px;
+      margin: 4px 0;
+      border-radius: 6px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tree-node.thinking { background: rgba(99,102,241,0.1); border-left: 3px solid var(--accent); }
+    .tree-node.tool { background: rgba(234,179,8,0.1); border-left: 3px solid var(--yellow); }
+    .tree-node.message { background: rgba(34,197,94,0.1); border-left: 3px solid var(--green); }
+
+    .tree-children { margin-left: 24px; }
+
+    .duration-badge {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--text2);
+      background: var(--bg3);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .duration-badge.slow { color: var(--red); background: rgba(239,68,68,0.1); }
+
+    /* ===== Tool Calls Table ===== */
+    .table-container {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg3);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg3); }
+
+    /* ===== Events Log ===== */
+    .event-log {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .event-item {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'Consolas', monospace;
+    }
+
+    .event-item:last-child { border-bottom: none; }
+
+    .event-time { color: var(--text2); min-width: 80px; }
+    .event-type {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      min-width: 140px;
+      text-align: center;
+    }
+
+    .event-type.agent_start { background: rgba(99,102,241,0.2); color: var(--accent2); }
+    .event-type.tool_call_start { background: rgba(234,179,8,0.2); color: var(--yellow); }
+    .event-type.tool_call_end { background: rgba(34,197,94,0.2); color: var(--green); }
+    .event-type.thinking_start { background: rgba(59,130,246,0.2); color: var(--blue); }
+    .event-type.message_user { background: rgba(168,85,247,0.2); color: #c084fc; }
+    .event-type.message_assistant { background: rgba(34,197,94,0.2); color: var(--green); }
+    .event-type.token_usage { background: rgba(239,68,68,0.2); color: var(--red); }
+
+    .event-content { color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ===== Health Score ===== */
+    .health-ring {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .score-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .score-good { background: rgba(34,197,94,0.15); color: var(--green); border: 3px solid var(--green); }
+    .score-warn { background: rgba(234,179,8,0.15); color: var(--yellow); border: 3px solid var(--yellow); }
+    .score-bad { background: rgba(239,68,68,0.15); color: var(--red); border: 3px solid var(--red); }
+
+    .bottlenecks { list-style: none; }
+    .bottlenecks li { padding: 4px 0; font-size: 13px; color: var(--text2); }
+    .bottlenecks li::before { content: '⚠️ '; }
+
+    .suggestions { list-style: none; margin-top: 8px; }
+    .suggestions li { padding: 4px 0; font-size: 13px; color: var(--text2); }
+
+    /* ===== Scrollbar ===== */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text2); }
+
+    /* ===== Realtime indicator ===== */
+    .realtime-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--green);
+      background: rgba(34,197,94,0.1);
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+
+    .pulse {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🔍 AgentScope</div>
+  <div class="header-status">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">未连接</span>
+    <span id="realtimeBadge" style="display:none" class="realtime-badge">
+      <div class="pulse"></div> 实时监控
+    </span>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <span>会话列表</span>
+      <button onclick="loadSessions()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:14px;" title="刷新">↻</button>
+    </div>
+    <div class="session-list" id="sessionList">
+      <div style="padding:16px;color:var(--text2);font-size:13px;text-align:center;">加载中...</div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('overview')">📊 概览</div>
+      <div class="tab" onclick="switchTab('tree')">🌳 决策树</div>
+      <div class="tab" onclick="switchTab('tools')">🔧 工具调用</div>
+      <div class="tab" onclick="switchTab('events')">📋 事件日志</div>
+      <div class="tab" onclick="switchTab('analysis')">⚡ 性能分析</div>
+    </div>
+
+    <div class="tab-content" id="tabContent">
+      <div class="empty-state">
+        <div class="icon">🔍</div>
+        <h3>选择一个会话</h3>
+        <p>从左侧选择一个 Agent 会话，查看详细的运行追踪信息</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  let ws = null;
+  let currentSessionId = null;
+  let currentTab = 'overview';
+  let sessions = [];
+  let realtimeEvents = [];
+
+  // ===== WebSocket =====
+  function connectWS() {
+    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(`${protocol}//${location.host}`);
+
+    ws.onopen = () => {
+      document.getElementById('statusDot').classList.add('connected');
+      document.getElementById('statusText').textContent = '已连接';
+      document.getElementById('realtimeBadge').style.display = 'inline-flex';
+    };
+
+    ws.onclose = () => {
+      document.getElementById('statusDot').classList.remove('connected');
+      document.getElementById('statusText').textContent = '未连接';
+      document.getElementById('realtimeBadge').style.display = 'none';
+      setTimeout(connectWS, 3000);
+    };
+
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'agent_event') {
+        realtimeEvents.push(msg.data);
+        if (currentSessionId === msg.data.sessionId && currentTab === 'events') {
+          renderEvents([...realtimeEvents]);
+        }
+        // 刷新会话列表
+        loadSessions();
+      }
+    };
+  }
+
+  // ===== Sessions =====
+  async function loadSessions() {
+    try {
+      const res = await fetch('/api/sessions');
+      const json = await res.json();
+      sessions = json.data || [];
+      renderSessionList();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function renderSessionList() {
+    const el = document.getElementById('sessionList');
+    if (!sessions.length) {
+      el.innerHTML = '<div style="padding:16px;color:var(--text2);font-size:13px;text-align:center;">暂无会话</div>';
+      return;
+    }
+
+    el.innerHTML = sessions.map(s => `
+      <div class="session-item ${s.id === currentSessionId ? 'active' : ''}" onclick="selectSession('${s.id}')">
+        <div class="session-name">${s.name || s.id.slice(0, 8)}</div>
+        <div class="session-meta">
+          <span class="badge badge-${s.status}">${s.status}</span>
+          <span>${s.agentName}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function selectSession(id) {
+    currentSessionId = id;
+    renderSessionList();
+    await renderTab(currentTab);
+  }
+
+  // ===== Tabs =====
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach((el, i) => {
+      el.classList.toggle('active', ['overview','tree','tools','events','analysis'][i] === tab);
+    });
+    renderTab(tab);
+  }
+
+  async function renderTab(tab) {
+    if (!currentSessionId) return;
+    const el = document.getElementById('tabContent');
+    el.innerHTML = '<div style="color:var(--text2);padding:24px;">加载中...</div>';
+
+    switch (tab) {
+      case 'overview': await renderOverview(); break;
+      case 'tree': await renderTree(); break;
+      case 'tools': await renderTools(); break;
+      case 'events': await renderEventsTab(); break;
+      case 'analysis': await renderAnalysis(); break;
+    }
+  }
+
+  // ===== Overview =====
+  async function renderOverview() {
+    const [sessionRes, quickRes] = await Promise.all([
+      fetch(`/api/sessions/${currentSessionId}`).then(r => r.json()),
+      fetch(`/api/sessions/${currentSessionId}/quick-analysis`).then(r => r.json()).catch(() => null),
+    ]);
+
+    const s = sessionRes.data;
+    const q = quickRes?.data;
+
+    const scoreClass = !q ? '' : q.healthScore >= 80 ? 'score-good' : q.healthScore >= 50 ? 'score-warn' : 'score-bad';
+
+    document.getElementById('tabContent').innerHTML = `
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">总耗时</div>
+          <div class="stat-value">${s.totalDuration ? (s.totalDuration/1000).toFixed(1)+'s' : '-'}</div>
+          <div class="stat-sub">从启动到结束</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Token 消耗</div>
+          <div class="stat-value">${s.totalTokens?.toLocaleString() || 0}</div>
+          <div class="stat-sub">总 Token 数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">事件数量</div>
+          <div class="stat-value">${s.eventCount || 0}</div>
+          <div class="stat-sub">记录的事件总数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">工具调用</div>
+          <div class="stat-value">${q?.toolCallCount ?? '-'}</div>
+          <div class="stat-sub">工具调用次数</div>
+        </div>
+      </div>
+
+      ${q ? `
+      <div class="health-ring">
+        <div class="score-circle ${scoreClass}">${q.healthScore}</div>
+        <div>
+          <div style="font-size:16px;font-weight:600;margin-bottom:4px;">健康评分</div>
+          <div style="font-size:13px;color:var(--text2);">
+            ${q.healthScore >= 80 ? '✅ 运行状况良好' : q.healthScore >= 50 ? '⚠️ 存在一些问题' : '❌ 需要优化'}
+          </div>
+        </div>
+      </div>` : ''}
+
+      <div class="table-container">
+        <table>
+          <tr><th>属性</th><th>值</th></tr>
+          <tr><td>会话 ID</td><td style="font-family:monospace;font-size:12px">${s.id}</td></tr>
+          <tr><td>Agent 名称</td><td>${s.agentName}</td></tr>
+          <tr><td>模型</td><td>${s.model}</td></tr>
+          <tr><td>状态</td><td><span class="badge badge-${s.status}">${s.status}</span></td></tr>
+          <tr><td>开始时间</td><td>${new Date(s.startTime).toLocaleString()}</td></tr>
+          ${s.endTime ? `<tr><td>结束时间</td><td>${new Date(s.endTime).toLocaleString()}</td></tr>` : ''}
+        </table>
+      </div>
+    `;
+  }
+
+  // ===== Decision Tree =====
+  async function renderTree() {
+    const res = await fetch(`/api/sessions/${currentSessionId}/trace`).then(r => r.json()).catch(() => null);
+
+    if (!res?.data) {
+      document.getElementById('tabContent').innerHTML = '<div class="empty-state"><div class="icon">🌳</div><h3>暂无追踪数据</h3><p>该会话尚未生成决策树</p></div>';
+      return;
+    }
+
+    const tree = res.data.decisionTree;
+
+    function renderNode(node, depth = 0) {
+      const indent = depth * 24;
+      const dur = node.duration ? `<span class="duration-badge ${node.duration > 1000 ? 'slow' : ''}">${node.duration}ms</span>` : '';
+      const icon = node.type === 'thinking' ? '🤔' : node.type === 'tool' ? '🔧' : node.type === 'message' ? '💬' : '🎯';
+      const html = `
+        <div class="tree-node ${node.type}" style="margin-left:${indent}px">
+          <span>${icon}</span>
+          <span>${node.content || node.type}</span>
+          ${dur}
+        </div>
+        ${(node.children || []).map(c => renderNode(c, depth + 1)).join('')}
+      `;
+      return html;
+    }
+
+    document.getElementById('tabContent').innerHTML = `
+      <div class="tree-container">
+        <div class="tree-title">🌳 决策树</div>
+        ${renderNode(tree)}
+      </div>
+    `;
+  }
+
+  // ===== Tool Calls =====
+  async function renderTools() {
+    const res = await fetch(`/api/sessions/${currentSessionId}/trace`).then(r => r.json()).catch(() => null);
+    const toolCalls = res?.data?.toolCalls || [];
+
+    if (!toolCalls.length) {
+      document.getElementById('tabContent').innerHTML = '<div class="empty-state"><div class="icon">🔧</div><h3>暂无工具调用</h3></div>';
+      return;
+    }
+
+    document.getElementById('tabContent').innerHTML = `
+      <div class="table-container">
+        <table>
+          <thead><tr><th>工具名称</th><th>参数</th><th>结果</th><th>耗时</th><th>状态</th></tr></thead>
+          <tbody>
+            ${toolCalls.map(tc => `
+              <tr>
+                <td><strong>${tc.toolName}</strong></td>
+                <td style="font-family:monospace;font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis">${JSON.stringify(tc.args)}</td>
+                <td style="font-family:monospace;font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis">${tc.result ? JSON.stringify(tc.result).slice(0,80) : '-'}</td>
+                <td><span class="${tc.duration > 1000 ? 'duration-badge slow' : 'duration-badge'}">${tc.duration ? tc.duration+'ms' : '-'}</span></td>
+                <td><span class="badge ${tc.success ? 'badge-completed' : 'badge-failed'}">${tc.success ? '成功' : tc.error ? '失败' : '进行中'}</span></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  // ===== Events =====
+  async function renderEventsTab() {
+    const res = await fetch(`/api/sessions/${currentSessionId}/events`).then(r => r.json()).catch(() => null);
+    const events = res?.data || [];
+    renderEvents(events);
+  }
+
+  function renderEvents(events) {
+    if (!events.length) {
+      document.getElementById('tabContent').innerHTML = '<div class="empty-state"><div class="icon">📋</div><h3>暂无事件</h3></div>';
+      return;
+    }
+
+    document.getElementById('tabContent').innerHTML = `
+      <div class="event-log">
+        ${events.map(e => `
+          <div class="event-item">
+            <span class="event-time">${new Date(e.timestamp).toLocaleTimeString()}</span>
+            <span class="event-type ${e.type}">${e.type}</span>
+            <span class="event-content">${getEventContent(e)}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function getEventContent(e) {
+    if (e.content) return e.content.slice(0, 100);
+    if (e.toolName) return `${e.toolName}(${JSON.stringify(e.args || {}).slice(0, 60)})`;
+    if (e.total) return `input:${e.input} output:${e.output} total:${e.total}`;
+    return JSON.stringify(e.metadata || {}).slice(0, 80);
+  }
+
+  // ===== Analysis =====
+  async function renderAnalysis() {
+    const res = await fetch(`/api/sessions/${currentSessionId}/analysis`).then(r => r.json()).catch(() => null);
+
+    if (!res?.data) {
+      document.getElementById('tabContent').innerHTML = '<div class="empty-state"><div class="icon">⚡</div><h3>暂无分析数据</h3></div>';
+      return;
+    }
+
+    const a = res.data;
+    const m = a.metrics;
+
+    document.getElementById('tabContent').innerHTML = `
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">总耗时</div>
+          <div class="stat-value">${(m.totalDuration/1000).toFixed(1)}s</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">工具调用次数</div>
+          <div class="stat-value">${m.toolCallCount}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">平均工具耗时</div>
+          <div class="stat-value">${m.averageToolCallDuration.toFixed(0)}ms</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">总 Token</div>
+          <div class="stat-value">${m.tokenUsage.total.toLocaleString()}</div>
+          <div class="stat-sub">in:${m.tokenUsage.input} out:${m.tokenUsage.output}</div>
+        </div>
+      </div>
+
+      ${a.bottlenecks.length ? `
+      <div class="tree-container">
+        <div class="tree-title">⚠️ 性能瓶颈</div>
+        <ul class="bottlenecks">
+          ${a.bottlenecks.map(b => `<li>${b}</li>`).join('')}
+        </ul>
+      </div>` : ''}
+
+      <div class="tree-container">
+        <div class="tree-title">💡 优化建议</div>
+        <ul class="suggestions">
+          ${a.suggestions.map(s => `<li>${s}</li>`).join('')}
+        </ul>
+      </div>
+
+      ${m.slowToolCalls.length ? `
+      <div class="table-container">
+        <table>
+          <thead><tr><th>慢工具调用</th><th>耗时</th></tr></thead>
+          <tbody>
+            ${m.slowToolCalls.map(tc => `
+              <tr>
+                <td>${tc.toolName}</td>
+                <td><span class="duration-badge slow">${tc.duration}ms</span></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>` : ''}
+    `;
+  }
+
+  // ===== Init =====
+  connectWS();
+  loadSessions();
+  setInterval(loadSessions, 10000);
+</script>
+</body>
+</html>
